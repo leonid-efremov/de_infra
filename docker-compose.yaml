@@ -1,32 +1,32 @@
 # 1. AirFlow 3.1.5
 # Пример из документации: https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html
 # Много лишнего, можно сократить)
-
 x-airflow-common:
   &airflow-common
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.1.5}
-  # build: .
+  build:
+    context: ${AIRFLOW_DEPLOY_CONF_PATH}
   env_file:
     - ${ENV_FILE_PATH:-.env}
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_MAIN_USER}:${POSTGRES_MAIN_PASSWORD}@postgres/${POSTGRES_DB_NAME}
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://${POSTGRES_MAIN_USER}:${POSTGRES_MAIN_PASSWORD}@postgres/${POSTGRES_DB_NAME}
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
-  #  _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+    SPARK_HOME: '/opt/spark'
+    SPARK_JARS_DIR: '/opt/spark/jars'
   volumes:
-    - ${AIRFLOW_PROJ_DIR:-./airflow}/dags:/opt/airflow/dags
-    - ${AIRFLOW_PROJ_DIR:-./airflow}/logs:/opt/airflow/logs
-    - ${AIRFLOW_PROJ_DIR:-./airflow}/config:/opt/airflow/config
-    - ${AIRFLOW_PROJ_DIR:-./airflow}/plugins:/opt/airflow/plugins
+    - ${AIRFLOW_PROJ_DIR}/dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR}/logs:/opt/airflow/logs
+    - ${AIRFLOW_PROJ_DIR}/config:/opt/airflow/config
+    - ${AIRFLOW_PROJ_DIR}/plugins:/opt/airflow/plugins
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -35,17 +35,67 @@ x-airflow-common:
     postgres:
       condition: service_healthy
 
+# 2. Spark
+# Вдохновлялся данным решением: https://github.com/cluster-apps-on-docker/spark-standalone-cluster-on-docker/tree/master
+x-spark-common:
+  &spark-common
+  build:
+    context: ${SPARK_DEPLOY_CONF_PATH}
+  env_file:
+    - ${ENV_FILE_PATH:-.env}
+  extra_hosts:
+    - "localhost:host-gateway"
+  healthcheck:
+    test: ["CMD", "pidof", "java"]
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 30s
+  volumes:
+    - ${SPARK_JOBS_DIR}:/opt/spark/jobs
+  deploy:
+    resources:
+      limits:
+        cpus: '1.00'
+        memory: 1024M
+      reservations:
+        cpus: '0.50'
+        memory: 512M
+
+# 3. Apache Ozone (S3)
+# Пример из официальной инструкции: https://ozone.apache.org/docs/edge/start/startfromdockerhub.html
+x-ozone-common:
+  &ozone-common
+  image: apache/ozone-2.1.0
+  environment:
+    &ozone-commom-env
+    OZONE-SITE.XML_hdds.datanode.dir: "/data/hdds"
+    OZONE-SITE.XML_ozone.metadata.dirs: "/data/metadata"
+    OZONE-SITE.XML_ozone.om.address: "ozone-manager"
+    OZONE-SITE.XML_ozone.om.http-address: "ozone-manager:9874"
+    OZONE-SITE.XML_ozone.recon.address: "ozone-recon-monitoring:9891"
+    OZONE-SITE.XML_ozone.recon.db.dir: "/data/metadata/recon"
+    OZONE-SITE.XML_ozone.replication: "1"
+    OZONE-SITE.XML_ozone.scm.block.client.address: "ozone-storage-container-manager"
+    OZONE-SITE.XML_ozone.scm.client.address: "ozone-storage-container-manager"
+    OZONE-SITE.XML_ozone.scm.datanode.id.dir: "/data/metadata"
+    OZONE-SITE.XML_ozone.scm.names: "ozone-storage-container-manager"
+    no_proxy: "ozone-manager,ozone-recon-monitoring,ozone-storage-container-manager,ozone-s3-gateway,localhost,127.0.0.1"
+  volumes:
+    - ${OZONE_DATA_DIR}:"/data/hdds"
+    - ${OZONE_METADATA_DIR}:"/data/metadata"
+
 services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
-      POSTGRES_DB: airflow
+      POSTGRES_USER: ${POSTGRES_MAIN_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_MAIN_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
     volumes:
       - ${POSTGRES_DB_DIR:-./postgres-db-volume}:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "airflow"]
+      test: ["CMD", "pg_isready", "-U", "$${POSTGRES_DB_NAME}"]
       interval: 30s
       retries: 5
       start_period: 5s
@@ -250,3 +300,78 @@ services:
       - airflow
     depends_on:
       <<: *airflow-common-depends-on
+
+  ozone-datanode:
+      <<: *ozone-common
+      ports:
+         - 9864
+      command: ["ozone","datanode"]
+  ozone-manager:
+      <<: *ozone-common
+      ports:
+         - 9874:9874
+      environment:
+         <<: *ozone-common-env
+         CORE-SITE.XML_hadoop.proxyuser.hadoop.hosts: "*"
+         CORE-SITE.XML_hadoop.proxyuser.hadoop.groups: "*"
+         ENSURE_OM_INITIALIZED: /data/metadata/om/current/VERSION
+         WAITFOR: scm:9876
+      command: ["ozone","om"]
+  ozone-storage-container-manager:
+      <<: *ozone-common
+      ports:
+         - 9876:9876
+      environment:
+         <<: *ozone-common-env
+         ENSURE_SCM_INITIALIZED: /data/metadata/scm/current/VERSION
+      command: 
+        - "ozone scm"
+        - "ozone sh bucket create s3v/$${OZONE_BUCKET_NAME}"
+
+      depends_on:
+        ozone-datanode:
+          condition: service_healthy
+        ozone-manager:
+          condition: service_healthy
+  ozone-recon-monitoring:
+      <<: *ozone-common
+      ports:
+         - 9888:9888
+      environment:
+         <<: *ozone-common-env
+      command: ["ozone","recon"]
+      depends_on:
+        ozone-storage-container-manager:
+          condition: service_healthy
+  ozone-s3-gateway:
+      <<: *ozone-common
+      ports:
+         - 9878:9878
+      environment:
+         <<: *ozone-common-env
+      command: ["ozone","s3g"]
+      depends_on:
+        ozone-storage-container-manager:
+          condition: service_healthy
+
+  # HDFS-like интерфейс для Ozone. Это нам не надо, используем только S3
+  #httpfs:
+  #    <<: *image
+  #    ports:
+  #       - 14000:14000
+  #    environment:
+  #       <<: *ozone-common
+  #       CORE-SITE.XML_fs.defaultFS: "ofs://om"
+  #    command: [ "ozone","httpfs" ]
+
+  jupyterlab:
+    build:
+      context: ${JUPYTER_DEPLOY_CONF_PATH}
+    ports:
+      - "8888:8888"
+    volumes:
+      - ${JUPYTER_WORK_DIR}:/opt/workspace
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - AIRFLOW_URL=http://localhost:8080
+      - OZONE_ENDPOINT_URL=http://localhost:9878
