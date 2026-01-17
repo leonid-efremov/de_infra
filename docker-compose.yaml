@@ -70,7 +70,7 @@ x-ozone-common:
   &ozone-common
   image: apache/ozone-2.1.0
   environment:
-    &ozone-commom-env
+    &ozone-common-env
     OZONE-SITE.XML_hdds.datanode.dir: "/data/hdds"
     OZONE-SITE.XML_ozone.metadata.dirs: "/data/metadata"
     OZONE-SITE.XML_ozone.om.address: "ozone-manager"
@@ -98,7 +98,7 @@ services:
     volumes:
       - ${POSTGRES_DB_DIR:-./postgres-db-volume}:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "$${POSTGRES_DB_NAME}"]
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_MAIN_USER}", "-d", "${POSTGRES_DB_NAME}"]
       interval: 30s
       retries: 5
       start_period: 5s

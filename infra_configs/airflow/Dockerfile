@@ -8,6 +8,6 @@ RUN python -m pip install --upgrade pip && \
 
 USER root
 RUN apt update && \
-    apt install -y openjdk-21-jdk
+    apt install -y openjdk-17-jdk
 
 USER airflow
