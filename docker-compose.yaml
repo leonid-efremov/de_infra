@@ -34,6 +34,7 @@ x-airflow-common:
       condition: service_healthy
     postgres:
       condition: service_healthy
+  profiles: [core, airflow]
 
 # 2. Spark
 # Вдохновлялся данным решением: https://github.com/cluster-apps-on-docker/spark-standalone-cluster-on-docker/tree/master
@@ -61,6 +62,7 @@ x-spark-common:
       reservations:
         cpus: '0.50'
         memory: 512M
+  profiles: [core, spark]
 
 # 3. Apache Ozone (S3)
 # Пример из официальной инструкции: https://ozone.apache.org/docs/edge/start/startfromdockerhub.html
@@ -84,6 +86,7 @@ x-ozone-common:
   volumes:
     - ${OZONE_DATA_DIR}:"/data/hdds"
     - ${OZONE_METADATA_DIR}:"/data/metadata"
+  profiles: [core, ozone, spark]
 
 services:
   postgres:
@@ -100,6 +103,7 @@ services:
       retries: 5
       start_period: 5s
     restart: always
+    profiles: [core, airflow]
 
   redis:
     image: redis:7.2-bookworm
@@ -112,6 +116,7 @@ services:
       retries: 5
       start_period: 30s
     restart: always
+    profiles: [core, airflow]
 
   airflow-apiserver:
     <<: *airflow-common
@@ -302,67 +307,66 @@ services:
       <<: *airflow-common-depends-on
 
   ozone-datanode:
-      <<: *ozone-common
-      ports:
-         - 9864
-      command: ["ozone","datanode"]
+    <<: *ozone-common
+    ports:
+      - 9864
+    command: ["ozone","datanode"]
   ozone-manager:
-      <<: *ozone-common
-      ports:
-         - 9874:9874
-      environment:
-         <<: *ozone-common-env
-         CORE-SITE.XML_hadoop.proxyuser.hadoop.hosts: "*"
-         CORE-SITE.XML_hadoop.proxyuser.hadoop.groups: "*"
-         ENSURE_OM_INITIALIZED: /data/metadata/om/current/VERSION
-         WAITFOR: scm:9876
-      command: ["ozone","om"]
+    <<: *ozone-common
+    ports:
+      - 9874:9874
+    environment:
+      <<: *ozone-common-env
+      CORE-SITE.XML_hadoop.proxyuser.hadoop.hosts: "*"
+      CORE-SITE.XML_hadoop.proxyuser.hadoop.groups: "*"
+      ENSURE_OM_INITIALIZED: /data/metadata/om/current/VERSION
+      WAITFOR: scm:9876
+    command: ["ozone","om"]
   ozone-storage-container-manager:
-      <<: *ozone-common
-      ports:
-         - 9876:9876
-      environment:
-         <<: *ozone-common-env
-         ENSURE_SCM_INITIALIZED: /data/metadata/scm/current/VERSION
-      command: 
-        - "ozone scm"
-        - "ozone sh bucket create s3v/$${OZONE_BUCKET_NAME}"
-
-      depends_on:
-        ozone-datanode:
-          condition: service_healthy
-        ozone-manager:
-          condition: service_healthy
+    <<: *ozone-common
+    ports:
+      - 9876:9876
+    environment:
+      <<: *ozone-common-env
+      ENSURE_SCM_INITIALIZED: /data/metadata/scm/current/VERSION
+    command: 
+      - "ozone scm"
+      - "ozone sh bucket create s3v/$${OZONE_BUCKET_NAME}"
+    depends_on:
+      ozone-datanode:
+        condition: service_healthy
+      ozone-manager:
+        condition: service_healthy
   ozone-recon-monitoring:
-      <<: *ozone-common
-      ports:
-         - 9888:9888
-      environment:
-         <<: *ozone-common-env
-      command: ["ozone","recon"]
-      depends_on:
-        ozone-storage-container-manager:
-          condition: service_healthy
+    <<: *ozone-common
+    ports:
+      - 9888:9888
+    environment:
+      <<: *ozone-common-env
+    command: ["ozone","recon"]
+    depends_on:
+      ozone-storage-container-manager:
+        condition: service_healthy
   ozone-s3-gateway:
-      <<: *ozone-common
-      ports:
-         - 9878:9878
-      environment:
-         <<: *ozone-common-env
-      command: ["ozone","s3g"]
-      depends_on:
-        ozone-storage-container-manager:
-          condition: service_healthy
+    <<: *ozone-common
+    ports:
+      - 9878:9878
+    environment:
+      <<: *ozone-common-env
+    command: ["ozone","s3g"]
+    depends_on:
+      ozone-storage-container-manager:
+        condition: service_healthy
 
   # HDFS-like интерфейс для Ozone. Это нам не надо, используем только S3
   #httpfs:
-  #    <<: *image
-  #    ports:
-  #       - 14000:14000
-  #    environment:
-  #       <<: *ozone-common
-  #       CORE-SITE.XML_fs.defaultFS: "ofs://om"
-  #    command: [ "ozone","httpfs" ]
+  #  <<: *image
+  #  ports:
+  #     - 14000:14000
+  #  environment:
+  #     <<: *ozone-common
+  #     CORE-SITE.XML_fs.defaultFS: "ofs://om"
+  #  command: [ "ozone","httpfs" ]
 
   jupyterlab:
     build:
@@ -375,3 +379,4 @@ services:
       - JUPYTER_ENABLE_LAB=yes
       - AIRFLOW_URL=http://localhost:8080
       - OZONE_ENDPOINT_URL=http://localhost:9878
+    profiles: [core, spark]
