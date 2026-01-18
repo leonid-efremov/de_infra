@@ -68,24 +68,25 @@ x-spark-common:
 # Пример из официальной инструкции: https://ozone.apache.org/docs/edge/start/startfromdockerhub.html
 x-ozone-common:
   &ozone-common
-  image: apache/ozone-2.1.0
+  build:
+    context: ${OZONE_DEPLOY_CONF_PATH}
   environment:
     &ozone-common-env
-    OZONE-SITE.XML_hdds.datanode.dir: "/data/hdds"
-    OZONE-SITE.XML_ozone.metadata.dirs: "/data/metadata"
-    OZONE-SITE.XML_ozone.om.address: "ozone-manager"
-    OZONE-SITE.XML_ozone.om.http-address: "ozone-manager:9874"
-    OZONE-SITE.XML_ozone.recon.address: "ozone-recon-monitoring:9891"
-    OZONE-SITE.XML_ozone.recon.db.dir: "/data/metadata/recon"
-    OZONE-SITE.XML_ozone.replication: "1"
-    OZONE-SITE.XML_ozone.scm.block.client.address: "ozone-storage-container-manager"
-    OZONE-SITE.XML_ozone.scm.client.address: "ozone-storage-container-manager"
-    OZONE-SITE.XML_ozone.scm.datanode.id.dir: "/data/metadata"
-    OZONE-SITE.XML_ozone.scm.names: "ozone-storage-container-manager"
-    no_proxy: "ozone-manager,ozone-recon-monitoring,ozone-storage-container-manager,ozone-s3-gateway,localhost,127.0.0.1"
+    OZONE-SITE.XML_hdds.datanode.dir: /data/hdds
+    OZONE-SITE.XML_ozone.metadata.dirs: /data/metadata
+    OZONE-SITE.XML_ozone.om.address: localhost:9862
+    OZONE-SITE.XML_ozone.om.http-address: localhost:9874
+    OZONE-SITE.XML_ozone.recon.address: localhost:9891
+    OZONE-SITE.XML_ozone.recon.db.dir: /data/metadata/recon
+    OZONE-SITE.XML_ozone.replication: 1
+    OZONE-SITE.XML_ozone.scm.block.client.address: localhost:9863
+    OZONE-SITE.XML_ozone.scm.client.address: localhost:9860
+    OZONE-SITE.XML_ozone.scm.datanode.id.dir: /data/metadata
+    OZONE-SITE.XML_ozone.scm.names: ozone-storage-container-manager
+    no_proxy: localhost
   volumes:
-    - ${OZONE_DATA_DIR}:"/data/hdds"
-    - ${OZONE_METADATA_DIR}:"/data/metadata"
+    - ${OZONE_DATA_DIR}:/data/hdds
+    - ${OZONE_METADATA_DIR}:/data/metadata
   profiles: [core, ozone, spark]
 
 services:
@@ -309,54 +310,51 @@ services:
   ozone-datanode:
     <<: *ozone-common
     ports:
-      - 9864
+      - "9864:9864"
     command: ["ozone","datanode"]
   ozone-manager:
     <<: *ozone-common
     ports:
-      - 9874:9874
+      - "9874:9874"
+      - "9862:9862"
     environment:
       <<: *ozone-common-env
       CORE-SITE.XML_hadoop.proxyuser.hadoop.hosts: "*"
       CORE-SITE.XML_hadoop.proxyuser.hadoop.groups: "*"
       ENSURE_OM_INITIALIZED: /data/metadata/om/current/VERSION
-      WAITFOR: scm:9876
+      WAITFOR: localhost:9876
     command: ["ozone","om"]
   ozone-storage-container-manager:
     <<: *ozone-common
     ports:
-      - 9876:9876
+      - "9876:9876"
+      - "9860:9860"
+      - "9863:9863"
     environment:
       <<: *ozone-common-env
       ENSURE_SCM_INITIALIZED: /data/metadata/scm/current/VERSION
-    command: 
-      - "ozone scm"
-      - "ozone sh bucket create s3v/$${OZONE_BUCKET_NAME}"
-    depends_on:
-      ozone-datanode:
-        condition: service_healthy
-      ozone-manager:
-        condition: service_healthy
+    command: ["ozone","scm"]    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9876/"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
   ozone-recon-monitoring:
     <<: *ozone-common
     ports:
-      - 9888:9888
+      - "9888:9888"
+      - "9891:9891"
     environment:
       <<: *ozone-common-env
     command: ["ozone","recon"]
-    depends_on:
-      ozone-storage-container-manager:
-        condition: service_healthy
   ozone-s3-gateway:
     <<: *ozone-common
     ports:
-      - 9878:9878
+      - "9878:9878"
     environment:
       <<: *ozone-common-env
     command: ["ozone","s3g"]
-    depends_on:
-      ozone-storage-container-manager:
-        condition: service_healthy
 
   # HDFS-like интерфейс для Ozone. Это нам не надо, используем только S3
   #httpfs:
@@ -379,4 +377,7 @@ services:
       - JUPYTER_ENABLE_LAB=yes
       - AIRFLOW_URL=http://localhost:8080
       - OZONE_ENDPOINT_URL=http://localhost:9878
+    depends_on:
+      ozone-storage-container-manager:
+        condition: service_healthy
     profiles: [core, spark]

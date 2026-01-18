@@ -1,4 +1,4 @@
-FROM jupyter/pyspark-notebook:spark-4.1.1
+FROM jupyter/base-notebook
 
 COPY requirements.txt /requirements.txt
 
@@ -7,8 +7,8 @@ RUN python -m pip install --upgrade pip && \
     pip install --no-cache-dir -r /requirements.txt
 
 USER root
-RUN apt update && \
-    apt install -y openjdk-17-jdk
+RUN apt-get update && \
+    apt-get install -y openjdk-17-jdk
 	
 ENV SPARK_HOME=/opt/spark
 
