@@ -67,27 +67,26 @@ x-spark-common:
 # 3. Apache Ozone (S3)
 # Пример из официальной инструкции: https://ozone.apache.org/docs/edge/start/startfromdockerhub.html
 x-ozone-common:
-  &ozone-common
-  build:
-    context: ${OZONE_DEPLOY_CONF_PATH}
-  environment:
-    &ozone-common-env
-    OZONE-SITE.XML_hdds.datanode.dir: /data/hdds
-    OZONE-SITE.XML_ozone.metadata.dirs: /data/metadata
-    OZONE-SITE.XML_ozone.om.address: localhost:9862
-    OZONE-SITE.XML_ozone.om.http-address: localhost:9874
-    OZONE-SITE.XML_ozone.recon.address: localhost:9891
-    OZONE-SITE.XML_ozone.recon.db.dir: /data/metadata/recon
-    OZONE-SITE.XML_ozone.replication: 1
-    OZONE-SITE.XML_ozone.scm.block.client.address: localhost:9863
-    OZONE-SITE.XML_ozone.scm.client.address: localhost:9860
-    OZONE-SITE.XML_ozone.scm.datanode.id.dir: /data/metadata
-    OZONE-SITE.XML_ozone.scm.names: ozone-storage-container-manager
-    no_proxy: localhost
-  volumes:
-    - ${OZONE_DATA_DIR}:/data/hdds
-    - ${OZONE_METADATA_DIR}:/data/metadata
-  profiles: [core, ozone, spark]
+   &ozone-common
+   build:
+      context: ./ozone-dockerconf
+   environment:
+      &ozone-common-env
+      OZONE-SITE.XML_hdds.datanode.dir: "/data/hdds"
+      OZONE-SITE.XML_ozone.metadata.dirs: "/data/metadata"
+      OZONE-SITE.XML_ozone.om.address: "ozone-om"
+      OZONE-SITE.XML_ozone.om.http-address: "ozone-om:9874"
+      OZONE-SITE.XML_ozone.recon.address: "ozone-recon:9891"
+      OZONE-SITE.XML_ozone.recon.db.dir: "/data/metadata/recon"
+      OZONE-SITE.XML_ozone.replication: "1"
+      OZONE-SITE.XML_ozone.scm.block.client.address: "ozone-scm"
+      OZONE-SITE.XML_ozone.scm.client.address: "ozone-scm"
+      OZONE-SITE.XML_ozone.scm.datanode.id.dir: "/data/metadata"
+      OZONE-SITE.XML_ozone.scm.names: "ozone-scm"
+      no_proxy: "ozone-om,ozone-recon,ozone-scm,ozone-s3g,localhost,127.0.0.1"
+   #volumes:
+   #   - ./docker-volumes/ozone:/data
+   profiles: [core, ozone, spark]
 
 services:
   postgres:
@@ -310,61 +309,57 @@ services:
   ozone-datanode:
     <<: *ozone-common
     ports:
-      - "9864:9864"
+        - "9864:9864"
     command: ["ozone","datanode"]
-  ozone-manager:
+    environment:
+        <<: *ozone-common-env
+  ozone-om:
     <<: *ozone-common
     ports:
-      - "9874:9874"
-      - "9862:9862"
+        - 9874:9874
     environment:
-      <<: *ozone-common-env
-      CORE-SITE.XML_hadoop.proxyuser.hadoop.hosts: "*"
-      CORE-SITE.XML_hadoop.proxyuser.hadoop.groups: "*"
-      ENSURE_OM_INITIALIZED: /data/metadata/om/current/VERSION
-      WAITFOR: localhost:9876
+        <<: *ozone-common-env
+        CORE-SITE.XML_hadoop.proxyuser.hadoop.hosts: "*"
+        CORE-SITE.XML_hadoop.proxyuser.hadoop.groups: "*"
+        ENSURE_OM_INITIALIZED: /data/metadata/om/current/VERSION
+        WAITFOR: ozone-scm:9876
     command: ["ozone","om"]
-  ozone-storage-container-manager:
+  ozone-scm:
     <<: *ozone-common
     ports:
-      - "9876:9876"
-      - "9860:9860"
-      - "9863:9863"
+        - 9876:9876
     environment:
-      <<: *ozone-common-env
-      ENSURE_SCM_INITIALIZED: /data/metadata/scm/current/VERSION
-    command: ["ozone","scm"]    
+        <<: *ozone-common-env
+        ENSURE_SCM_INITIALIZED: /data/metadata/scm/current/VERSION
+    command: ["ozone","scm"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9876/"]
-      interval: 60s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-  ozone-recon-monitoring:
+        test: ["CMD", "curl", "-f", "http://localhost:9876/"]
+        interval: 60s
+        timeout: 10s
+        retries: 5
+        start_period: 30s
+  ozone-recon:
     <<: *ozone-common
     ports:
-      - "9888:9888"
-      - "9891:9891"
+        - 9888:9888
     environment:
-      <<: *ozone-common-env
+        <<: *ozone-common-env
     command: ["ozone","recon"]
-  ozone-s3-gateway:
+  ozone-s3g:
     <<: *ozone-common
     ports:
-      - "9878:9878"
+        - 9878:9878
     environment:
-      <<: *ozone-common-env
+        <<: *ozone-common-env
     command: ["ozone","s3g"]
-
-  # HDFS-like интерфейс для Ozone. Это нам не надо, используем только S3
-  #httpfs:
-  #  <<: *image
-  #  ports:
-  #     - 14000:14000
-  #  environment:
-  #     <<: *ozone-common
-  #     CORE-SITE.XML_fs.defaultFS: "ofs://om"
-  #  command: [ "ozone","httpfs" ]
+  ozone-httpfs:
+    <<: *ozone-common
+    ports:
+        - 14000:14000
+    environment:
+        <<: *ozone-common-env
+        CORE-SITE.XML_fs.defaultFS: "ofs://om"
+    command: [ "ozone","httpfs" ]
 
   jupyterlab:
     build:
