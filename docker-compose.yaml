@@ -68,8 +68,7 @@ x-spark-common:
 # Пример из официальной инструкции: https://ozone.apache.org/docs/edge/start/startfromdockerhub.html
 x-ozone-common:
    &ozone-common
-   build:
-      context: ./ozone-dockerconf
+   image: apache/ozone:2.1.0
    environment:
       &ozone-common-env
       OZONE-SITE.XML_hdds.datanode.dir: "/data/hdds"
@@ -84,8 +83,6 @@ x-ozone-common:
       OZONE-SITE.XML_ozone.scm.datanode.id.dir: "/data/metadata"
       OZONE-SITE.XML_ozone.scm.names: "ozone-scm"
       no_proxy: "ozone-om,ozone-recon,ozone-scm,ozone-s3g,localhost,127.0.0.1"
-   #volumes:
-   #   - ./docker-volumes/ozone:/data
    profiles: [core, ozone, spark]
 
 services:
@@ -313,6 +310,8 @@ services:
     command: ["ozone","datanode"]
     environment:
         <<: *ozone-common-env
+    volumes:
+      - ./docker-volumes/ozone/datanode:/data
   ozone-om:
     <<: *ozone-common
     ports:
@@ -324,6 +323,8 @@ services:
         ENSURE_OM_INITIALIZED: /data/metadata/om/current/VERSION
         WAITFOR: ozone-scm:9876
     command: ["ozone","om"]
+    volumes:
+      - ./docker-volumes/ozone/ozone-manager:/data
   ozone-scm:
     <<: *ozone-common
     ports:
@@ -338,6 +339,8 @@ services:
         timeout: 10s
         retries: 5
         start_period: 30s
+    volumes:
+      - ./docker-volumes/ozone/storage-container-manager:/data
   ozone-recon:
     <<: *ozone-common
     ports:
@@ -373,6 +376,6 @@ services:
       - AIRFLOW_URL=http://localhost:8080
       - OZONE_ENDPOINT_URL=http://localhost:9878
     depends_on:
-      ozone-storage-container-manager:
+      ozone-scm:
         condition: service_healthy
     profiles: [core, spark]
