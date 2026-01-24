@@ -92,6 +92,8 @@ services:
       POSTGRES_USER: ${POSTGRES_MAIN_USER}
       POSTGRES_PASSWORD: ${POSTGRES_MAIN_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB_NAME}
+    ports:
+      - "5432:5432"
     volumes:
       - ${POSTGRES_DB_DIR:-./postgres-db-volume}:/var/lib/postgresql/data
     healthcheck:
@@ -100,7 +102,7 @@ services:
       retries: 5
       start_period: 5s
     restart: always
-    profiles: [core, airflow]
+    profiles: [core, airflow, hive]
 
   redis:
     image: redis:7.2-bookworm
@@ -375,7 +377,29 @@ services:
       - JUPYTER_ENABLE_LAB=yes
       - AIRFLOW_URL=http://localhost:8080
       - OZONE_ENDPOINT_URL=http://localhost:9878
+    profiles: [core, spark, jupyter]
+
+# 4. Hive
+# Пример в документации: https://hive.apache.org/docs/latest/admin/setting-up-hive-with-docker/
+  hive-metastore:
+    image: apache/hive:standalone-metastore-4.2.0
+    environment:
+      - HIVE_METASTORE_DB_TYPE=postgres
+      - HIVE_METASTORE_DB_HOST=${HIVE_METASTORE_DB_HOST}
+      - HIVE_METASTORE_DB_NAME=${HIVE_METASTORE_DB_NAME}
+      - HIVE_METASTORE_DB_USER=${HIVE_METASTORE_DB_USER}
+      - HIVE_METASTORE_DB_PASS=${HIVE_METASTORE_DB_PASSWORD}
     depends_on:
-      ozone-scm:
+      postgres:
         condition: service_healthy
-    profiles: [core, spark]
+    ports:
+      - "9083:9083"
+    volumes:
+      - ${HIVE_METASTORE_WORK_DIR}:/opt/hive/data/warehouse
+    healthcheck:
+      test: ["CMD", "pidof", "java"]
+      interval: 60s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    profiles: [core, spark, hive]

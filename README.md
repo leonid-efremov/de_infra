@@ -2,7 +2,10 @@
 Infrastructure for running DE pipelines locally
 
 ## Components
-1. AirFlow
+1. AirFlow - pipelines orchestrator
+2. Ozone - S3 object storage
+3. Jupyter Lab - code development and testing environment
+4. Hive Metastore - каталог для таблиц
 
 ## Инструкция
 Первый запуск на Windows:
@@ -18,4 +21,4 @@ Infrastructure for running DE pipelines locally
 5. Создаем ozone bucket: ozone sh bucket create s3v/${OZONE_BUCKET_NAME}
 
 ## Заметки
-Java 21 (openjdk-21-jdk) не устанавливается? Не удается найти пакет. Только 17.
+Java 21 (openjdk-21-jdk) не устанавливается (у меня)? Не удается найти пакет. Только 17.
