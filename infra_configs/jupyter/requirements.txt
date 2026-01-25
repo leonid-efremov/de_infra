@@ -1,6 +1,7 @@
-pyspark==4.1.1
+pyspark==3.5.1
 pandas==2.3.3
 requests
 psycopg2-binary
 boto3
 s3fs
+hive-metastore-client==1.0.9
