@@ -11,7 +11,7 @@ RUN mkdir -p /tmp/jars && \
     cp /tmp/jars/*.jar /opt/hadoop/share/hadoop/common/lib/ && \
     rm -rf /tmp/jars
 
-RUN chmod -R 644 /opt/hive/lib/
-RUN chmod -R 644 /opt/hadoop/share/hadoop/common/lib/
+RUN chmod -R 755 /opt/hive/lib/
+RUN chmod -R 755 /opt/hadoop/share/hadoop/common/lib/
 
 USER $NB_UID

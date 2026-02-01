@@ -13,7 +13,7 @@ RUN mkdir -p /tmp/jars && \
     cp /tmp/jars/*.jar /opt/spark/jars/ && \
     rm -rf /tmp/jars
 
-RUN chmod -R 644 /opt/spark/jars/
+RUN chmod -R 755 /opt/spark/jars/
 
 COPY requirements.txt /requirements.txt
 
