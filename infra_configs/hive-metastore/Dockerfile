@@ -3,8 +3,6 @@ FROM apache/hive:standalone-metastore-4.2.0
 USER root
 
 RUN mkdir -p /tmp/jars && \
-    curl -o /tmp/jars/ozone-filesystem-hadoop3-2.1.0.jar \
-    https://repo1.maven.org/maven2/org/apache/ozone/ozone-filesystem-hadoop3/2.1.0/ozone-filesystem-hadoop3-2.1.0.jar && \
     curl -o /tmp/jars/hadoop-aws-3.3.4.jar \
     https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar && \
     curl -o /tmp/jars/aws-java-sdk-bundle-1.12.262.jar \

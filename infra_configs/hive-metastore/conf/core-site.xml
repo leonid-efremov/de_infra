@@ -16,30 +16,95 @@
   limitations under the License.
 -->
 <configuration>
-  <property>
-    <name>fs.s3a.endpoint</name>
-    <value>http://ozone-s3g:9878</value>
-    <description>Ozone S3 GW endpoint URL</description>
-  </property>
-  <property>
-    <name>fs.s3a.access.key</name>
-    <value>ozone-access-key</value>
-  </property>
-  <property>
-    <name>fs.s3a.secret.key</name>
-    <value>ozone-secret-key</value>
-  </property>
-  <property>
-    <name>fs.s3a.impl</name>
-    <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
-  </property>
-  <property>
-    <name>fs.s3a.path.style.access</name>
-    <value>true</value>
-  </property>
-  <property>
-    <name>fs.defaultFS</name>
-    <value>s3a://ozone-om</value>
-    <description>Address of Ozone Manager</description>
-  </property>    
+	<property>
+		<name>fs.s3a.endpoint</name>
+		<value>http://ozone-s3g:9878</value>
+		<description>Ozone S3 GW endpoint URL</description>
+	</property>
+	<property>
+		<name>fs.s3a.access.key</name>
+		<value>ozone-access-key</value>
+	</property>
+	<property>
+		<name>fs.s3a.secret.key</name>
+		<value>ozone-secret-key</value>
+	</property>
+
+	<property>
+		<name>fs.s3a.impl</name>
+		<value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+	</property>
+	<property>
+        <name>fs.s3a.connection.ssl.enabled</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>fs.s3a.aws.credentials.provider</name>
+        <value>org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider</value>
+    </property>
+	<property>
+		<name>fs.s3a.path.style.access</name>	
+		<value>true</value>
+	</property>
+	<property>
+		<name>fs.defaultFS</name>
+		<value>s3a://ozone-om</value>
+		<description>Address of Ozone Manager</description>
+	</property> 
+  
+	<property>
+		<name>fs.s3a.threads.keepalivetime</name>
+		<value>60</value>
+		<description>Thread keep-alive time in seconds (numeric only)</description>
+	</property>
+	<property>
+		<name>fs.s3a.connection.timeout</name>
+		<value>200000</value>
+		<description>Socket connection timeout in milliseconds</description>
+	</property>
+	<property>
+		<name>fs.s3a.connection.establish.timeout</name>
+		<value>120000</value>
+		<description>Socket establishment timeout in milliseconds</description>
+	</property>
+	<property>
+		<name>fs.s3a.connection.request.timeout</name>
+		<value>60000</value>
+		<description>Request timeout in milliseconds</description>
+	</property> 
+	    <property>
+        <name>fs.s3a.retry.limit</name>
+        <value>3</value>
+        <description>Number of retries for S3A operations</description>
+    </property>    
+    <property>
+        <name>fs.s3a.retry.interval</name>
+        <value>500</value>
+        <description>Retry interval in milliseconds</description>
+    </property>
+	<property>
+        <name>fs.s3a.multipart.purge.age</name>
+        <value>86400000</value>
+        <description>Multipart upload purge age in milliseconds (24 hours)</description>
+    </property>
+	<property>
+        <name>fs.s3a.connection.ssl.timeout</name>
+        <value>200000</value>
+        <description>SSL connection timeout in milliseconds</description>
+    </property>    
+    <property>
+        <name>fs.s3a.socket.timeout</name>
+        <value>200000</value>
+        <description>Socket timeout in milliseconds</description>
+    </property>
+    <property>
+        <name>fs.s3a.connection.ttl</name>
+        <value>60000</value>
+        <description>Connection TTL in milliseconds</description>
+    </property>    
+	<property>
+        <name>fs.s3a.connection.maximum</name>
+        <value>50</value>
+        <description>Maximum number of S3A connections</description>
+    </property>
 </configuration>

@@ -16,41 +16,93 @@
   limitations under the License.
 -->
 <configuration>
-  <!--property -->
-    <!--name>metastore.warehouse.dir</name>
-    <!--value>/opt/hive/data/warehouse</value>
-  <!--/property-->
-  <!-- S3A configuration for Ozone -->
-  <property>
-    <name>metastore.warehouse.dir</name>
-    <value>ofs://ozone-om/s3v/mybucket/warehouse/</value>
-  </property>
-  <property>
-    <name>metastore.event.db.notification.api.auth</name>
-    <value>false</value>
-  </property>
-  <property>
-    <name>metastore.catalog.servlet.port</name>
-    <value>9001</value>
-  </property>
-  <property>
-    <name>metastore.catalog.servlet.auth</name>
-    <value>none</value>
-  </property>
-  <property>
-    <name>metastore.client.socket.timeout</name>
-    <value>60</value>
-  </property>
-  <property>
-    <name>metastore.client.connect.retry.delay</name>
-    <value>5</value>
-  </property>
-  <property>
-    <name>fs.s3a.impl</name>
-    <value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
-  </property>
-  <property>
-    <name>fs.ofs.impl</name>
-    <value>org.apache.hadoop.fs.ozone.RootedOzoneFileSystem</value>
-  </property>
+	<!--property !-->
+	<!--name>metastore.warehouse.dir</name !-->
+	<!--value>/opt/hive/data/warehouse</value !-->
+	<!--/property !-->
+	<!-- S3A configuration for Ozone !-->
+	<property>
+		<name>metastore.warehouse.dir</name>
+		<value>s3a://ozone-om/s3v/mybucket/warehouse/</value>
+	</property>
+	<property>
+		<name>metastore.warehouse.external.dir</name>
+		<value>s3a://ozone-om/s3v/mybucket/warehouse/</value>
+	</property>
+	<property>
+		<name>metastore.event.db.notification.api.auth</name>
+		<value>false</value>
+	</property>
+	<property>
+		<name>metastore.catalog.servlet.port</name>
+		<value>9001</value>
+	</property>
+	<property>
+		<name>metastore.catalog.servlet.auth</name>
+		<value>none</value>
+	</property>
+	<property>
+		<name>metastore.client.socket.timeout</name>
+		<value>60</value>
+	</property>
+	<property>
+		<name>metastore.client.connect.retry.delay</name>
+		<value>5</value>
+	</property>
+	
+	<property>
+		<name>fs.s3a.impl</name>
+		<value>org.apache.hadoop.fs.s3a.S3AFileSystem</value>
+	</property>
+	<property>
+        <name>fs.s3a.connection.ssl.enabled</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>fs.s3a.aws.credentials.provider</name>
+        <value>org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider</value>
+    </property>
+	<property>
+		<name>fs.s3a.path.style.access</name>	
+		<value>true</value>
+	</property>
+	<property>
+		<name>fs.s3a.endpoint</name>
+		<value>http://ozone-s3g:9878</value>
+		<description>Ozone S3 GW endpoint URL</description>
+	</property>
+	<property>
+		<name>fs.s3a.access.key</name>
+		<value>ozone-access-key</value>
+	</property>
+	<property>
+		<name>fs.s3a.secret.key</name>
+		<value>ozone-secret-key</value>
+	</property>
+	
+	<property>
+		<name>metastore.client.socket.timeout</name>
+		<value>60000</value>
+	</property>
+
+	<property>
+		<name>metastore.client.connect.retry.delay</name>
+		<value>5000</value>
+	</property>
+  
+	<property>
+		<name>hadoop.rpc.timeout</name>
+		<value>60000</value>
+		<description>RPC timeout in milliseconds</description>
+	</property>
+	<property>
+		<name>ipc.client.connection.maxidletime</name>
+		<value>10000</value>
+		<description>IPC client connection max idle time in milliseconds</description>
+	</property>
+	<property>
+		<name>ipc.client.connect.timeout</name>
+		<value>20000</value>
+		<description>IPC client connect timeout in milliseconds</description>
+	</property>
 </configuration>
