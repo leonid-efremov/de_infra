@@ -43,14 +43,18 @@ x-spark-common:
     context: ${SPARK_DEPLOY_CONF_PATH}
   env_file:
     - ${ENV_FILE_PATH:-.env}
+  environment:
+    SPARK_MASTER_URL: "spark://spark-master:7077"
+    SPARK_MASTER_WEBUI_PORT: "8080"
+    SPARK_WORKER_WEBUI_PORT: "8091"
   extra_hosts:
     - "localhost:host-gateway"
   healthcheck:
     test: ["CMD", "pidof", "java"]
-    interval: 30s
+    interval: 60s
     timeout: 10s
     retries: 5
-    start_period: 30s
+    start_period: 60s
   volumes:
     - ${SPARK_JOBS_DIR}:/opt/spark/jobs
   deploy:
@@ -58,10 +62,7 @@ x-spark-common:
       limits:
         cpus: '1.00'
         memory: 1024M
-      reservations:
-        cpus: '0.50'
-        memory: 512M
-  profiles: [core, spark]
+  profiles: [core, spark, sparkcluster]
 
 # 3. Apache Ozone (S3)
 # Пример из официальной инструкции: https://ozone.apache.org/docs/edge/start/startfromdockerhub.html
@@ -419,7 +420,43 @@ services:
       - JUPYTER_ENABLE_LAB=yes
       - AIRFLOW_URL=http://localhost:8080
       - OZONE_ENDPOINT_URL=http://ozone-s3g:9878
-    profiles: [core, spark, jupyter]
+    profiles: [core, spark, jupyter, sparkcluster]
 
   hive-metastore:
     <<: *hive-metastore-common
+
+  spark-master:
+    <<: *spark-common    
+    container_name: spark-master
+    hostname: spark-master
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+      - "4040:4040"
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=0.0.0.0
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+      - SPARK_NO_DAEMONIZE=true
+#    depends_on:
+#      ozone-scm:
+#        condition: service_healthy
+#      hive-metastore:
+#        condition: service_healthy  
+    command: /opt/spark/sbin/start-master.sh
+
+  spark-worker:
+    <<: *spark-common
+    ports:
+      - "8091:8091"
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=${SPARK_MASTER_URL}      
+      - SPARK_WORKER_PORT=7078
+      - SPARK_WORKER_WEBUI_PORT=8091
+      - SPARK_NO_DAEMONIZE=true
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    command: /opt/spark/sbin/start-worker.sh ${SPARK_MASTER_URL}
