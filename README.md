@@ -20,5 +20,11 @@ Infrastructure for running DE pipelines locally
 4. JupyterLab доступен по адресу: http://localhost:8888. Доступ по токену, можно взять в логах контейнера
 5. Создаем ozone bucket: ozone sh bucket create s3v/${OZONE_BUCKET_NAME}
 
+Тестирование и первый запуск:
+1. Выводим Ozone SCM из безопасного режима: docker exec <scm-container-id> ozone admin safemode exit
+2. Создаем тестовую БД в Hive Metastore
+3. Записываем данные в таблицу через Spark
+
 ## Заметки
 Java 21 (openjdk-21-jdk) не устанавливается (у меня)? Не удается найти пакет. Только 17.
+

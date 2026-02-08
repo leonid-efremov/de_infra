@@ -82,8 +82,9 @@ x-ozone-common:
       OZONE-SITE.XML_ozone.scm.datanode.id.dir: "/data/metadata"
       OZONE-SITE.XML_ozone.scm.names: "ozone-scm"
       OZONE-SITE.XML_ozone.hdds.scm.safemode.min.datanode: "1"
-      OZONE-SITE.XML_ozone.acl.enabled: "false"
-      OZONE-SITE.XML_ozone.security.enabled: "false"
+      OZONE-SITE.XML_ozone.hdds.scm.safemode.threshold.pct: "0"
+      OZONE-SITE.XML_ozone.hdds.scm.safemode.healthy.pipeline.pct: "0"
+      OZONE-SITE.XML_ozone.hdds.scm.safemode.atleast.one.node.reported.pipeline.pct: "0"
       no_proxy: "ozone-om,ozone-recon,ozone-scm,ozone-s3g,localhost,127.0.0.1"
    profiles: [core, ozone, spark]
 

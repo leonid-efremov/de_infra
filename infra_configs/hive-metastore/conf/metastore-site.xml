@@ -23,11 +23,11 @@
 	<!-- S3A configuration for Ozone !-->
 	<property>
 		<name>metastore.warehouse.dir</name>
-		<value>s3a://ozone-om/s3v/mybucket/warehouse/</value>
+		<value>s3a://mybucket/warehouse/</value>
 	</property>
 	<property>
 		<name>metastore.warehouse.external.dir</name>
-		<value>s3a://ozone-om/s3v/mybucket/warehouse/</value>
+		<value>s3a://mybucket/warehouse/</value>
 	</property>
 	<property>
 		<name>metastore.event.db.notification.api.auth</name>
