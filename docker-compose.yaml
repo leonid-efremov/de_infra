@@ -420,6 +420,7 @@ services:
       - JUPYTER_ENABLE_LAB=yes
       - AIRFLOW_URL=http://localhost:8080
       - OZONE_ENDPOINT_URL=http://ozone-s3g:9878
+      - SPARK_MASTER_URL=${SPARK_MASTER_URL}
     profiles: [core, spark, jupyter, sparkcluster]
 
   hive-metastore:
@@ -439,11 +440,11 @@ services:
       - SPARK_MASTER_PORT=7077
       - SPARK_MASTER_WEBUI_PORT=8080
       - SPARK_NO_DAEMONIZE=true
-#    depends_on:
-#      ozone-scm:
-#        condition: service_healthy
-#      hive-metastore:
-#        condition: service_healthy  
+    depends_on:
+      ozone-scm:
+        condition: service_healthy
+      hive-metastore:
+        condition: service_healthy  
     command: /opt/spark/sbin/start-master.sh
 
   spark-worker:

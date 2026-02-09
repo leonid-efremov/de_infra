@@ -1,4 +1,4 @@
-pyspark==3.5.1
+pyspark==3.5.7
 pandas==2.3.3
 requests
 psycopg2-binary

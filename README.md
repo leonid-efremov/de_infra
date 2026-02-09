@@ -19,6 +19,7 @@ Infrastructure for running DE pipelines locally
 3. Ozone Recon доступен по адресу: http://localhost:9888
 4. JupyterLab доступен по адресу: http://localhost:8888. Доступ по токену, можно взять в логах контейнера
 5. Создаем ozone bucket: ozone sh bucket create s3v/${OZONE_BUCKET_NAME}
+6. В кластерном режиме Spark, UI spark master-а доступен по ссылке: http://localhost:8080/
 
 Тестирование и первый запуск:
 1. Выводим Ozone SCM из безопасного режима: docker exec <scm-container-id> ozone admin safemode exit
