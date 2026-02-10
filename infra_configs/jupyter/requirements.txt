@@ -4,3 +4,5 @@ requests
 psycopg2-binary
 boto3
 hive-metastore-client==1.0.9
+pyiceberg==0.11.0
+pyarrow==23.0.0

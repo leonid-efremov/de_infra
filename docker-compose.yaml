@@ -87,7 +87,7 @@ x-ozone-common:
       OZONE-SITE.XML_ozone.hdds.scm.safemode.healthy.pipeline.pct: "0"
       OZONE-SITE.XML_ozone.hdds.scm.safemode.atleast.one.node.reported.pipeline.pct: "0"
       no_proxy: "ozone-om,ozone-recon,ozone-scm,ozone-s3g,localhost,127.0.0.1"
-   profiles: [core, ozone, spark]
+   profiles: [core, ozone, spark, hive]
 
 # 4. Hive-Metastore
 # Пример из документации: https://hive.apache.org/docs/latest/admin/setting-up-hive-with-docker/
@@ -120,6 +120,9 @@ x-hive-metastore-common:
     retries: 10
     start_period: 30s
   profiles: [core, spark, hive]
+
+# На будущее: REST-каталог для Iceberg
+# tabulario/iceberg-rest
 
 services:
   postgres:
@@ -421,7 +424,7 @@ services:
       - AIRFLOW_URL=http://localhost:8080
       - OZONE_ENDPOINT_URL=http://ozone-s3g:9878
       - SPARK_MASTER_URL=${SPARK_MASTER_URL}
-    profiles: [core, spark, jupyter, sparkcluster]
+    profiles: [core, spark, jupyter, sparkcluster, hive]
 
   hive-metastore:
     <<: *hive-metastore-common
