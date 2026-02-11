@@ -2,7 +2,5 @@ pyspark==3.5.7
 pandas==2.3.3
 requests
 psycopg2-binary
-boto3
+pyiceberg[s3fs,hive,pyarrow]==0.11.0
 hive-metastore-client==1.0.9
-pyiceberg==0.11.0
-pyarrow==23.0.0

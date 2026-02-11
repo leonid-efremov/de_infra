@@ -23,10 +23,9 @@ Infrastructure for running DE pipelines locally
 6. В кластерном режиме Spark, UI spark master-а доступен по ссылке: http://localhost:8080/
 
 Тестирование:
-1. Выводим Ozone SCM из безопасного режима: docker exec <scm-container-id> ozone admin safemode exit
+1. Выводим Ozone SCM из безопасного режима: docker exec _scm-container-id_ ozone admin safemode exit
 2. Создаем тестовую БД в Hive Metastore
 3. Записываем данные в S3 через Spark
 
 ## Заметки
 Java 21 (openjdk-21-jdk) не устанавливается (у меня)? Не удается найти пакет. Только 17.
-
