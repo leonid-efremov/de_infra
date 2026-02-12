@@ -47,6 +47,7 @@ x-spark-common:
     SPARK_MASTER_URL: "spark://spark-master:7077"
     SPARK_MASTER_WEBUI_PORT: "8080"
     SPARK_WORKER_WEBUI_PORT: "8091"
+    AWS_REGION: "us-east-1"
   extra_hosts:
     - "localhost:host-gateway"
   healthcheck:
@@ -83,12 +84,10 @@ x-ozone-common:
       OZONE-SITE.XML_ozone.scm.datanode.id.dir: "/data/metadata"
       OZONE-SITE.XML_ozone.scm.names: "ozone-scm"
       OZONE-SITE.XML_ozone.hdds.scm.safemode.min.datanode: "1"
-      OZONE-SITE.XML_ozone.scm.safe.mode.enabled: "false" # HealthyPipelineSafeModeRule
-      OZONE-SITE.XML_ozone.scm.safe.mode.extension: "120000"
       no_proxy: "ozone-om,ozone-recon,ozone-scm,ozone-s3g,localhost,127.0.0.1"
    profiles: [core, ozone, spark, hive]
 
-# 4. Hive-Metastore
+# 4. Hive-Metastore (не используется)
 # Пример из документации: https://hive.apache.org/docs/latest/admin/setting-up-hive-with-docker/
 x-hive-metastore-common:
   &hive-metastore-common
@@ -118,10 +117,42 @@ x-hive-metastore-common:
     timeout: 5s
     retries: 10
     start_period: 30s
-  profiles: [core, spark, hive]
+  profiles: [core, spark, hive, hms]
 
-# На будущее: REST-каталог для Iceberg: https://iceberg.apache.org/spark-quickstart/#adding-a-catalog
-# tabulario/iceberg-rest
+# 5. REST-каталог для Iceberg (Nessie): https://github.com/projectnessie/nessie/blob/main/docker/all-in-one/docker-compose.yml
+x-nessie-common:
+  &nessie-common
+  image: ghcr.io/projectnessie/nessie:0.107.2
+  ports:
+      - "19120:19120"
+      - "9000:9000"
+  environment:
+    - nessie.version.store.type=JDBC
+    - nessie.version.store.persist.jdbc.datasource=postgresql
+    - quarkus.datasource.postgresql.jdbc.url=jdbc:postgresql://postgres:5432/${POSTGRES_DB_NAME}
+    - quarkus.datasource.postgresql.username=${POSTGRES_MAIN_USER}
+    - quarkus.datasource.postgresql.password=${POSTGRES_MAIN_PASSWORD}
+    - nessie.catalog.default-warehouse=warehouse
+    - nessie.catalog.warehouses.warehouse.location=s3a://mybucket/
+    - nessie.catalog.service.s3.default-options.region=us-east-1
+    - nessie.catalog.service.s3.default-options.path-style-access=true
+    - nessie.catalog.service.s3.default-options.access-key=urn:nessie-secret:quarkus:nessie.catalog.secrets.access-key
+    - nessie.catalog.secrets.access-key.name=ozone-access-key
+    - nessie.catalog.secrets.access-key.secret=ozone-secret-key
+    - nessie.catalog.service.s3.default-options.endpoint=http://ozone-s3g:9878
+    - nessie.server.authentication.enabled=false # authentification with Keycloak
+    - nessie.server.authorization.enabled=false
+  depends_on:
+    ozone-om:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy    
+  healthcheck:
+    test: "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /q/health HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"
+    interval: 30s
+    timeout: 10s
+    retries: 5
+  profiles: [core, spark, hive]
 
 services:
   postgres:
@@ -140,7 +171,7 @@ services:
       retries: 5
       start_period: 5s
     restart: always
-    profiles: [core, spark, airflow, hive]
+    profiles: [core, airflow, hive, spark]
 
   redis:
     image: redis:7.2-bookworm
@@ -423,10 +454,13 @@ services:
       - AIRFLOW_URL=http://localhost:8080
       - OZONE_ENDPOINT_URL=http://ozone-s3g:9878
       - SPARK_MASTER_URL=${SPARK_MASTER_URL}
-    profiles: [core, spark, jupyter, sparkcluster, hive]
+    profiles: [core, spark, jupyter, sparkcluster, hive, hms]
 
-  hive-metastore:
-    <<: *hive-metastore-common
+  #hive-metastore:
+  #  <<: *hive-metastore-common
+
+  nessie-catalog:
+    <<: *nessie-common
 
   spark-master:
     <<: *spark-common    
@@ -434,7 +468,7 @@ services:
     hostname: spark-master
     ports:
       - "7077:7077"
-      - "8080:8080"
+      - "8080:8088"
       - "4040:4040"
     environment:
       - SPARK_MODE=master
@@ -445,7 +479,7 @@ services:
     depends_on:
       ozone-scm:
         condition: service_healthy
-      hive-metastore:
+      nessie-catalog:
         condition: service_healthy  
     command: /opt/spark/sbin/start-master.sh
 

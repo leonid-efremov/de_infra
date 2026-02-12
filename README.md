@@ -20,7 +20,7 @@ Infrastructure for running DE pipelines locally
 3. Ozone Recon доступен по адресу: http://localhost:9888
 4. JupyterLab доступен по адресу: http://localhost:8888. Доступ по токену, можно взять в логах контейнера
 5. Создаем ozone bucket: ozone sh bucket create s3v/${OZONE_BUCKET_NAME}
-6. В кластерном режиме Spark, UI spark master-а доступен по ссылке: http://localhost:8080/
+6. В кластерном режиме Spark, UI spark master-а доступен по ссылке: http://localhost:8088/
 
 Тестирование:
 1. Выводим Ozone SCM из безопасного режима: docker exec _scm-container-id_ ozone admin safemode exit
@@ -28,4 +28,5 @@ Infrastructure for running DE pipelines locally
 3. Записываем данные в S3 через Spark
 
 ## Заметки
-Java 21 (openjdk-21-jdk) не устанавливается (у меня)? Не удается найти пакет. Только 17.
+1. Java 21 (openjdk-21-jdk) не устанавливается (у меня)? Не удается найти пакет. Только 17.
+2. Используем Nessie catalog для Iceberg. Hive Metastore (>4) не работают с Iceberg? Open issue: https://github.com/apache/iceberg/issues/12878 
