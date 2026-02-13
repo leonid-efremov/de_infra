@@ -27,6 +27,7 @@ Infrastructure for running DE pipelines locally
 2. Выводим Ozone SCM из безопасного режима руками: docker exec _scm-container-id_ ozone admin safemode exit
 3. Записываем данные в S3 через Spark (тетрадка pyspark-localy, копируем в папку ./docker-volumes/jupyter_notebooks)
 4. Записываем данные в Iceberg-таблицу через Spark (pyspark-cluster)
+5. Запускаем тоже самое через AirFlow (dag - airflow/dags/spark-dag.py; job - airflow/dags/spark-jobs/spark-job-test.py)
 
 ## Заметки
 1. Java 21 (openjdk-21-jdk) не устанавливается (у меня)? Не удается найти пакет. Только 17.
