@@ -14,6 +14,7 @@ Infrastructure for running DE pipelines locally
 1. Ставим и запускаем Docker Desktop
 2. Обновляем WSL2 (cmd: wsl --update)
 3. Запускаем из папки проекта (cmd: docker compose up --profile spark). Для частичного запуска указываем профиль (docker compose --profile airflow up). Профили: core, airflow, spark, ozone, hive
+4. Опционально, установить Make: winget install GnuWin32.Make
 
 При успешном запуске:
 1. UI AirFlow открывается по адресу: http://localhost:8080 (login: airflow, password: airflow)

@@ -2,8 +2,7 @@
 # Пример из документации: https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html
 x-airflow-common:
   &airflow-common
-  build:
-    context: ${AIRFLOW_DEPLOY_CONF_PATH}
+  image: de_infra-airflow:python3.10-spark3.5
   env_file:
     - ${ENV_FILE_PATH:-.env}
   environment:
@@ -39,8 +38,7 @@ x-airflow-common:
 # Вдохновлялся данным решением: https://github.com/cluster-apps-on-docker/spark-standalone-cluster-on-docker/tree/master
 x-spark-common:
   &spark-common
-  build:
-    context: ${SPARK_DEPLOY_CONF_PATH}
+  image: de_infra-spark:spark3.5-iceberg1.10
   env_file:
     - ${ENV_FILE_PATH:-.env}
   environment:
@@ -372,6 +370,8 @@ services:
 
   ozone-datanode:
     <<: *ozone-common
+    container_name: ozone-datanode
+    hostname: ozone-datanode
     ports:
         - "9864:9864"
     command: ["ozone","datanode"]
@@ -381,6 +381,8 @@ services:
       - ./docker-volumes/ozone/datanode:/data
   ozone-om:
     <<: *ozone-common
+    container_name: ozone-om
+    hostname: ozone-om
     ports:
         - 9874:9874
     environment:
@@ -400,6 +402,8 @@ services:
       - ./docker-volumes/ozone/ozone-manager:/data
   ozone-scm:
     <<: *ozone-common
+    container_name: ozone-scm
+    hostname: ozone-scm
     ports:
         - 9876:9876
     environment:
@@ -416,6 +420,8 @@ services:
       - ./docker-volumes/ozone/storage-container-manager:/data
   ozone-recon:
     <<: *ozone-common
+    container_name: ozone-recon
+    hostname: ozone-recon
     ports:
         - 9888:9888
     environment:
@@ -423,6 +429,8 @@ services:
     command: ["ozone","recon"]
   ozone-s3g:
     <<: *ozone-common
+    container_name: ozone-s3g
+    hostname: ozone-s3g
     ports:
         - 9878:9878
     environment:
@@ -430,6 +438,8 @@ services:
     command: ["ozone","s3g"]
   ozone-httpfs:
     <<: *ozone-common
+    container_name: ozone-httpfs
+    hostname: ozone-httpfs
     ports:
         - 14000:14000
     environment:
@@ -438,8 +448,8 @@ services:
     command: [ "ozone","httpfs" ]
 
   jupyterlab:
-    build:
-      context: ${JUPYTER_DEPLOY_CONF_PATH}
+    container_name: jupyterlab
+    image: de_infra-jupyter:python3.10-spark3.5
     ports:
       - "8888:8888"
       - "4045:4045"
@@ -481,6 +491,7 @@ services:
 
   spark-worker:
     <<: *spark-common
+    container_name: spark-worker-1
     ports:
       - "8091:8091"
     environment:
