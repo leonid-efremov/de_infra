@@ -19,3 +19,5 @@ RUN mkdir -p /tmp/jars && \
     https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-aws-bundle/1.10.1/iceberg-aws-bundle-1.10.1.jar
 
 RUN chmod -R 755 /tmp/jars/
+
+COPY spark-defaults.conf "${SPARK_HOME}/conf/spark-defaults.conf"

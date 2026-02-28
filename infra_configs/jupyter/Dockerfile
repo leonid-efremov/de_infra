@@ -7,6 +7,8 @@ USER root
 ARG SPARK_JARS_DIR="/opt/spark/jars"
 COPY --from=jars-provider /tmp/jars/*.jar "${SPARK_JARS_DIR}/"
 RUN chmod -R 755 "${SPARK_JARS_DIR}/"
+COPY --from=jars-provider "/opt/spark/conf/spark-defaults.conf" "/opt/spark/conf/spark-defaults.conf"
+RUN chmod -R 755 "/opt/spark/conf/"
 
 RUN apt-get update && \
     apt-get install -y openjdk-17-jdk

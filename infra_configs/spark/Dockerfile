@@ -8,6 +8,8 @@ ENV SPARK_HOME=/opt/spark
 ARG SPARK_JARS_DIR="$SPARK_HOME/jars"
 COPY --from=jars-provider /tmp/jars/*.jar "${SPARK_JARS_DIR}/"
 RUN chmod -R 755 "${SPARK_JARS_DIR}/"
+COPY --from=jars-provider "${SPARK_HOME}/conf/spark-defaults.conf" "${SPARK_HOME}/conf/spark-defaults.conf"
+RUN chmod -R 755 "${SPARK_HOME}/conf/"
 
 COPY requirements.txt /requirements.txt
 
