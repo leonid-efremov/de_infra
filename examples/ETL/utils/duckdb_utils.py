@@ -18,6 +18,18 @@ class DuckdbUtils:
     @staticmethod
     def setup_catalog(duckdb_connection: DuckDBPyConnection) -> DuckDBPyConnection:
         duckdb_connection.execute(f"""
+            CREATE OR REPLACE SECRET s3_secret (
+                TYPE s3,
+                ENDPOINT '{S3_ENDPOINT}',
+                KEY_ID '{S3_ACCESS_KEY}',
+                SECRET '{S3_SECRET_KEY}',
+                USE_SSL false,
+                URL_STYLE 'path',
+                REGION 'us-east-1'
+            );
+        """)
+        
+        duckdb_connection.execute(f"""
             ATTACH 'warehouse' AS {CATALOG_NAME} (
                 TYPE iceberg,
                 AUTHORIZATION_TYPE 'NONE',
@@ -36,14 +48,14 @@ class DuckdbUtils:
         return duckdb_connection, CATALOG_NAME
 
     @staticmethod
-    def clean_table(self, schematable_to_clean: str, duckdb_connection: DuckDBPyConnection) -> None:
+    def clean_path(schematable_to_clean: str, duckdb_connection: DuckDBPyConnection) -> None:
         duckdb_connection.execute(f"""
             TRUNCATE TABLE {schematable_to_clean};
         """)
 
     @staticmethod
-    def check_table_data(self, schematable_to_check: str, duckdb_connection: DuckDBPyConnection) -> int:
+    def check_table_path(schematable_to_check: str, duckdb_connection: DuckDBPyConnection) -> int:
         cnt = duckdb_connection.execute(f"""
-            SELECT COUNT(*) FROM {schematable_to_check};
+            SELECT COUNT(*) FROM read_parquet({schematable_to_check});
         """).fetchone()[0]
         return cnt

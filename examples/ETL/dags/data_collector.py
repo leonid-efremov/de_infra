@@ -1,6 +1,9 @@
+import os
 import requests
 import json
 from typing import Optional, Dict, Any
+from dotenv import load_dotenv
+import pandas as pd
 
 from utils import DuckdbUtils
 
@@ -10,7 +13,8 @@ SUPPORTED_ASSETS = {
     'ETH': 'ETHEREUM',
 }
 ALPHA_VANTAGE_URL = 'https://www.alphavantage.co/query'
-API_KEY = ''
+load_dotenv() # dotenv_path='../.env'
+API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY") # must be specified in your /examples/ETL/.env file
 
 
 class CryptoDataCollector:
@@ -20,8 +24,8 @@ class CryptoDataCollector:
 
         self.api_key = API_KEY
         self.base_url = ALPHA_VANTAGE_URL
-        self.schematable_name = schematable_name
-        self.schematable_name_stg = schematable_name_stg
+        self.schematable_path = schematable_name
+        self.schematable_path_stg = schematable_name_stg
         self.asset = asset
 
         self.conn = self._get_conn()
@@ -36,73 +40,56 @@ class CryptoDataCollector:
             'function': 'DIGITAL_CURRENCY_DAILY',
             'symbol': self.asset,
             'market': market,
-            'apikey': self.api_key
+            'apikey': self.api_key,
         }
 
         response = requests.get(self.base_url, params=api_params)
-        response.raise_for_status()
         data = response.json()
 
         return data
 
     def load_json_to_stg(self, input_data_json: Dict[str, Any]) -> None:
-        json_str = json.dumps(input_data_json)
+        json_data_str = json.dumps(input_data_json['Time Series (Digital Currency Daily)'])
 
+        pdf = pd.read_json(json_data_str, orient='index')
+        pdf = pdf.reset_index().rename(columns={'index': 'date'})
+
+        tmp_table_name = 'tmp_data'
+        self.conn.register(tmp_table_name, pdf)
         self.conn.execute(f"""
-            INSERT INTO {self.schematable_name_stg} (
-                dt, open_price, high_price, low_price, close_price, trading_volume, market_cap, processed_dttm
+            COPY (
+                SELECT CAST("date" AS DATE) AS dt,
+                    CAST("1. open" AS DOUBLE) AS open_price,
+                    CAST("2. high" AS DOUBLE) AS high_price,
+                    CAST("3. low" AS DOUBLE) AS low_price,
+                    CAST("4. close" AS DOUBLE) AS close_price,
+                    CAST("5. volume" AS DOUBLE) AS trading_volume,
+                    CURRENT_TIMESTAMP AS processed_dttm
+                FROM {tmp_table_name}
+                ORDER BY dt DESC
+            ) TO '{self.schematable_path_stg}' (
+                FORMAT PARQUET, 
+                COMPRESSION ZSTD
             )
-
-            WITH parsed_json AS (
-                SELECT '{json_str}'::JSON as raw_json
-            ),
-            time_series_json AS (
-                SELECT raw_json->'Time Series (Digital Currency Daily)' as ts_json
-                FROM parsed_json
-            ),
-            exploded AS (
-                SELECT key::VARCHAR as date_key,
-                    value as daily_data
-                FROM (
-                    SELECT unnest(
-                        list_transform(
-                            json_keys(ts_json), k -> {{'key': k, 'value': ts_json -> k}}
-                        )
-                    ) AS entry
-                    FROM time_series_json
-                ) AS t(entry)
-            )
-
-            SELECT 
-                CAST(date_key AS DATE) AS dt,
-                CAST(daily_data->>'1a. open (USD)' AS DOUBLE) AS open_price,
-                CAST(daily_data->>'2a. high (USD)' AS DOUBLE) AS high_price,
-                CAST(daily_data->>'3a. low (USD)' AS DOUBLE) AS low_price,
-                CAST(daily_data->>'4a. close (USD)' AS DOUBLE) AS close_price,
-                CAST(daily_data->>'5. volume' AS DOUBLE) AS trading_volume,
-                CAST(daily_data->>'6. market cap (USD)' AS DOUBLE) AS market_cap,
-                CURRENT_TIMESTAMP AS processed_at
-            FROM exploded
-            ORDER BY dt DESC
             ;
         """)
 
     def load_from_stg_to_target(self) -> None:
         self.conn.execute(f"""
-            INSERT INTO {self.schematable_name}
+            INSERT INTO {self.schematable_path}
             SELECT *
-            FROM {self.schematable_name_stg};
+            FROM read_parquet({self.schematable_path_stg});
         """)
 
     def process(self) -> int:
         res_json = self.fetch_asset_data_json()
 
-        DuckdbUtils.clean_table(self.schematable_name_stg)
+        DuckdbUtils.clean_table(self.schematable_path_stg, self.conn)
         self.load_json_to_stg(res_json)
-        row_cnt = DuckdbUtils.check_table_data(self.schematable_name_stg)
+        row_cnt = DuckdbUtils.check_table_data(self.schematable_path_stg, self.conn)
 
         if row_cnt > 0:
-            DuckdbUtils.clean_table(self.schematable_name)
+            DuckdbUtils.clean_table(self.schematable_path, self.conn)
             self.load_from_stg_to_target()
 
         self.conn.close()

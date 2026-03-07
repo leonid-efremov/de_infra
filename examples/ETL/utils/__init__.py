@@ -1,1 +1,1 @@
-from duckdb import DuckdbUtils
+from .duckdb_utils import DuckdbUtils

@@ -460,6 +460,11 @@ services:
       - AIRFLOW_URL=http://localhost:8080
       - OZONE_ENDPOINT_URL=http://ozone-s3g:9878
       - SPARK_MASTER_URL=${SPARK_MASTER_URL}
+    deploy:
+      resources:
+        limits:
+          cpus: '2.00'
+          memory: 2048M
     profiles: [core, spark, jupyter, sparkcluster, hive, hms]
 
   #hive-metastore:
