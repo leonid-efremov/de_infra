@@ -33,6 +33,7 @@ class DuckdbUtils:
             ATTACH 'warehouse' AS {CATALOG_NAME} (
                 TYPE iceberg,
                 AUTHORIZATION_TYPE 'NONE',
+                ACCESS_DELEGATION_MODE 'NONE',
                 ENDPOINT '{NESSIE_CATALOG_ENDPOINT}'
             );
         """)
@@ -48,14 +49,14 @@ class DuckdbUtils:
         return duckdb_connection, CATALOG_NAME
 
     @staticmethod
-    def clean_path(schematable_to_clean: str, duckdb_connection: DuckDBPyConnection) -> None:
+    def clean_table(schematable_to_clean: str, duckdb_connection: DuckDBPyConnection) -> None:
         duckdb_connection.execute(f"""
             TRUNCATE TABLE {schematable_to_clean};
         """)
 
     @staticmethod
-    def check_table_path(schematable_to_check: str, duckdb_connection: DuckDBPyConnection) -> int:
+    def check_table_data(schematable_to_check: str, duckdb_connection: DuckDBPyConnection) -> int:
         cnt = duckdb_connection.execute(f"""
-            SELECT COUNT(*) FROM read_parquet({schematable_to_check});
+            SELECT COUNT(*) FROM {schematable_to_check};
         """).fetchone()[0]
         return cnt
