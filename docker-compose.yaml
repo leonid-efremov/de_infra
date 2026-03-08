@@ -357,6 +357,14 @@ services:
           --conn-host spark://spark-master \
           --conn-port 7077 \
           --conn-extra '{"master":"spark://spark-master:7077","deploy_mode":"cluster","spark_binary":"/opt/spark/bin/spark-submit","conf":{},"env_vars":{}}'
+        echo
+        echo "Creating Iceberg connection:"
+        echo
+        /entrypoint airflow connections delete iceberg_default || true
+        /entrypoint airflow connections add iceberg_default \
+          --conn-type iceberg \
+          --conn-host iceberg://nessie-catalog:19120/iceberg \
+          --conn-extra '{"warehouse":"s3a://mybucket/warehouse/","s3.endpoint":"http://ozone-s3g:9878","s3.region": "us-east-1","s3.access-key-id":"${OZONE_ACCESS_KEY_ID}","s3.secret-access-key":"${OZONE_SECRET_ACCESS_KEY}"}'
     environment:
       <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: 'true'
