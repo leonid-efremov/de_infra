@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 import pandas as pd
 
-from utils import DuckdbUtils
+from ETL.utils import DuckdbUtils
 
 
 SUPPORTED_ASSETS = {
