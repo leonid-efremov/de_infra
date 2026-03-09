@@ -27,7 +27,7 @@ end_task = EmptyOperator(task_id='end', dag=dag)
 load_task = SparkSubmitOperator(
     task_id="union_cryptoasset_data",
     conn_id="spark_default",
-    application="/opt/airflow/dags/ETL/spark-jobs/dds.py",
+    application="/opt/airflow/dags/ETL/src/spark-job-dds.py",
     deploy_mode="client",
     driver_memory="1G",
     num_executors=1,
