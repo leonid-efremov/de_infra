@@ -15,7 +15,7 @@ TRG_SCHEMA = 'iceberg.cryptocurrencies_project_raw_stg'
 
 def load_cryptoasset_data(asset):
 	sleep(3)
-
+    
     crypto_data_collector = CryptoDataCollector(
         asset,
         f'{TRG_SCHEMA}.{asset.lower()}',
@@ -39,7 +39,7 @@ dag = DAG(
     schedule=None,
     description="Cryptocurrencies data loading from source API",
     catchup=False,
-    tags=['DE', 'cryptocurrencies_project', 'duckdb', 'iceberg']
+    tags=['DE', 'cryptocurrencies_project', 'raw', 'duckdb', 'iceberg'],
 )
 
 start_task = EmptyOperator(task_id='start', dag=dag)

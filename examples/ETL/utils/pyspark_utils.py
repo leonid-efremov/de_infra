@@ -50,3 +50,42 @@ class PySparkIcebergUtils:
     CALL iceberg_catalog.system.remove_orphan_files(table => 'db.sample', location => 'tablelocation/data');
     """
     pass
+
+
+class PySparkTableLoader:
+
+    def __init__(self, table_name, stg_table_name, partition_by, spark_session):
+        self.table_name = table_name
+        self.stg_table_name = stg_table_name
+        self.partition_by = partition_by
+        self.spark = spark_session
+        return self
+
+    def _get_dataframe_writer(self, df_to_write, table_to_write):
+        if self.partition_by:
+            df_to_write = df_to_write.partitionBy(self.partition_by)
+        df_writer = df_to_write.writeTo(table_to_write)
+        return df_writer
+
+    def _overwrite_table(self, df_to_write, table_to_write):
+        df = self._get_dataframe_writer(df_to_write, table_to_write)      
+        df.replace()
+
+    def _overwrite_table_partitions(self, df_to_write, table_to_write):
+        df = self._get_dataframe_writer(df_to_write, table_to_write)      
+        df.overwritePartitions()
+
+    def calc_stg(self, stg_sql):
+        df = self.spark.sql(stg_sql)
+
+        self._overwrite_table(df, self.stg_table_name)
+        return self
+
+    def load_trg_scd1(self, overwrite_trg=False):
+        df = self.spark.table(self.stg_table_name)
+
+        if overwrite_trg:
+            self._overwrite_table(df, self.table_name)
+        else:
+            self._overwrite_table_partitions(df, self.table_name)
+        return self
