@@ -1,3 +1,5 @@
+import os
+os.environ['SPARK_CONF_DIR'] = '/opt/spark/conf'
 from pyspark.sql import SparkSession
 
 from ETL.utils import PySparkTableLoader
@@ -10,10 +12,10 @@ spark = SparkSession \
     .config('spark.driver.memory', '1G')\
     .config('spark.executor.instances', '1')\
     .config('spark.executor.cores', '1')\
-    .config('spark.executor.memory', '512m')\
+    .config('spark.executor.memory', '1G')\
     .getOrCreate()
 
-spark.conf.set('spark.sql.shuffle.partitions', '25')
+spark.conf.set('spark.sql.shuffle.partitions', '10')
 
 
 REPORT_DT = 1

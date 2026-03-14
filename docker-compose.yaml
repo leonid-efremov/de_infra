@@ -60,7 +60,7 @@ x-spark-common:
     resources:
       limits:
         cpus: '1.00'
-        memory: 1024M
+        memory: 1536M
   profiles: [core, spark, sparkcluster]
 
 # 3. Apache Ozone (S3)
@@ -460,7 +460,7 @@ services:
     image: de_infra-jupyter:python3.10-spark3.5
     ports:
       - "8888:8888"
-      - "4045:4045"
+      - "4040:4040"
     volumes:
       - ${JUPYTER_WORK_DIR}:/opt/workspace
     environment:
@@ -488,7 +488,7 @@ services:
     ports:
       - "7077:7077"
       - "8088:8088"
-      - "4040:4040"
+      - "4045:4045"
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=0.0.0.0

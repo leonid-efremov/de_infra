@@ -22,6 +22,7 @@ Infrastructure for running DE pipelines locally
 3. JupyterLab доступен по адресу: http://localhost:8888. Доступ по токену, можно взять в логах контейнера
 4. Создаем ozone bucket: docker exec _om-container-id_ ozone sh bucket create s3v/${OZONE_BUCKET_NAME}
 5. В кластерном режиме Spark, UI spark master-а доступен по ссылке: http://localhost:8088
+6. Spark UI при запуске через Jupyter: http://localhost:4040
 
 Тестирование:
 1. Добавляем тестовый ДАГ в AirFlow (airflow_test), скопировав его в папку ./docker-volumes/airflow/dags

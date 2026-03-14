@@ -13,10 +13,10 @@ class PySparkDatabase:
 
     def create_table(self, table_data, db_list):
         databases = [db_name for db_name in db_list if table_data['layer'] in db_name]
-        partitioning = '' if table_data['partition'] is None else f"PARTITIONED BY ({table_data['partition']})"
+        partitioning = '' if table_data['partition'] is None else f"PARTITIONED BY ({','.join(table_data['partition'])})"
 
-        table_name = lambda db: f'{self.catalog_name}.{db}.{table_data['name']}'
-        table_location = lambda db: f'{self.catalog_location}/{db}/{table_data['name']}'
+        table_name = lambda db: f"{self.catalog_name}.{db}.{table_data['name']}"
+        table_location = lambda db: f"{self.catalog_location}/{db}/{table_data['name']}"
 
         for db_name in databases:
             self.spark.sql(f"""
@@ -35,11 +35,11 @@ class PySparkDatabase:
                 LOCATION '{table_location(db_name)}';
             """)
 
-    def show_all_tables(self, spark_session, catalog_name):
+    def show_all_tables(self):
         schemas = [row[0] for row in self.spark.sql(f"SHOW DATABASES IN {self.catalog_name}").collect()]
         # Для каждой схемы выводим таблицы
         for schema in schemas:
-            tables = spark_session.sql(f"SHOW TABLES IN iceberg.{schema}").collect()
+            tables = self.spark.sql(f"SHOW TABLES IN {self.catalog_name}.{schema}").collect()
             for table in tables:
                 print(f"  - {schema}.{table.tableName}")
 
@@ -59,33 +59,30 @@ class PySparkTableLoader:
         self.stg_table_name = stg_table_name
         self.partition_by = partition_by
         self.spark = spark_session
-        return self
 
     def _get_dataframe_writer(self, df_to_write, table_to_write):
-        if self.partition_by:
-            df_to_write = df_to_write.partitionBy(self.partition_by)
         df_writer = df_to_write.writeTo(table_to_write)
-        return df_writer
-
-    def _overwrite_table(self, df_to_write, table_to_write):
-        df = self._get_dataframe_writer(df_to_write, table_to_write)      
-        df.replace()
-
-    def _overwrite_table_partitions(self, df_to_write, table_to_write):
-        df = self._get_dataframe_writer(df_to_write, table_to_write)      
-        df.overwritePartitions()
+        if self.partition_by:
+            df_writer = df_writer.partitionedBy(*self.partition_by)
+        df_final_writer = df_writer \
+            .tableProperty('write.distribution-mode', 'none') \
+            .tableProperty('write.write-format', 'parquet') \
+            .tableProperty('write.compression-codec', 'snappy')
+        return df_final_writer
 
     def calc_stg(self, stg_sql):
         df = self.spark.sql(stg_sql)
+        df_writer = self._get_dataframe_writer(df, self.stg_table_name) 
 
-        self._overwrite_table(df, self.stg_table_name)
+        df_writer.createOrReplace()
         return self
 
     def load_trg_scd1(self, overwrite_trg=False):
         df = self.spark.table(self.stg_table_name)
+        df_writer = self._get_dataframe_writer(df, self.table_name) 
 
         if overwrite_trg:
-            self._overwrite_table(df, self.table_name)
+            df_writer.createOrReplace()
         else:
-            self._overwrite_table_partitions(df, self.table_name)
+            df_writer.overwritePartitions()
         return self

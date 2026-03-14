@@ -14,12 +14,12 @@ TRG_SCHEMA = 'iceberg.cryptocurrencies_project_raw_stg'
 
 
 def load_cryptoasset_data(asset):
-	sleep(3)
-    
+    sleep(3)
+
     crypto_data_collector = CryptoDataCollector(
         asset,
-        f'{TRG_SCHEMA}.{asset.lower()}',
-        f'{STG_SCHEMA}.{asset.lower()}',
+        f"{TRG_SCHEMA}.{asset.lower()}",
+        f"{STG_SCHEMA}.{asset.lower()}",
     )
 
     result_row_cnt = crypto_data_collector.process()
