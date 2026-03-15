@@ -29,7 +29,9 @@ class PySparkDatabase:
                 USING iceberg
                 TBLPROPERTIES (
                     'format-version' = '2',
-                    'write.parquet.compression-codec' = 'snappy'                
+                    'write.write-format' = 'parquet',
+                    'write.parquet.compression-codec' = 'snappy',
+                    'write.compression-codec' = 'snappy'
                 )
                 {partitioning}
                 LOCATION '{table_location(db_name)}';
@@ -72,8 +74,8 @@ class PySparkTableLoader:
 
     def calc_stg(self, stg_sql):
         df = self.spark.sql(stg_sql)
-        df_writer = self._get_dataframe_writer(df, self.stg_table_name) 
-
+        df_writer = self._get_dataframe_writer(df, self.stg_table_name)
+        
         df_writer.createOrReplace()
         return self
 
@@ -82,7 +84,7 @@ class PySparkTableLoader:
         df_writer = self._get_dataframe_writer(df, self.table_name) 
 
         if overwrite_trg:
-            df_writer.createOrReplace()
+            df_writer.createOrReplace()        
         else:
             df_writer.overwritePartitions()
         return self

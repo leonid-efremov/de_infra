@@ -7,18 +7,15 @@ from ETL.utils import PySparkTableLoader
 
 spark = SparkSession \
     .builder \
-    .appName("union_cryptoasset_data") \
-    .config('spark.driver.cores', '1')\
-    .config('spark.driver.memory', '1G')\
-    .config('spark.executor.instances', '1')\
-    .config('spark.executor.cores', '1')\
-    .config('spark.executor.memory', '1G')\
+    .appName("calc_analytic_indicators") \
+    .config("spark.ui.port", "4041")\
     .getOrCreate()
 
 spark.conf.set('spark.sql.shuffle.partitions', '10')
 
 
-REPORT_DT = 1
+REPORT_DT = str(os.environ['REPORT_DT'])
+REWRITE_TRG = bool(os.environ['REWRITE_TRG'])
 
 # not the best calculation methodology)
 DM_QUERY = f"""
@@ -49,7 +46,7 @@ DM_QUERY = f"""
         , CURRENT_TIMESTAMP AS processed_dttm
     FROM (
         SELECT hist_data.asset
-            , current_data.current_price
+            , MAX(current_data.current_price) AS current_price
             , MAX(CASE
                 WHEN hist_data.dt BETWEEN {REPORT_DT} - interval 7 days AND {REPORT_DT}
                     THEN hist_data.high_price
@@ -92,22 +89,22 @@ DM_QUERY = f"""
             END) AS low_price_1y
             , AVG(CASE
                 WHEN hist_data.dt BETWEEN {REPORT_DT} - interval 7 days AND {REPORT_DT}
-                    THEN (hist_data.hign_price + hist_data.low_price) / 2
+                    THEN (hist_data.high_price + hist_data.low_price) / 2
                     ELSE 0
             END) AS med_price_7d
             , AVG(CASE
                 WHEN hist_data.dt BETWEEN {REPORT_DT} - interval 30 days AND {REPORT_DT}
-                    THEN (hist_data.hign_price + hist_data.low_price) / 2
+                    THEN (hist_data.high_price + hist_data.low_price) / 2
                     ELSE 0
             END) AS med_price_30d
             , AVG(CASE
                 WHEN hist_data.dt BETWEEN {REPORT_DT} - interval 90 days AND {REPORT_DT}
-                    THEN (hist_data.hign_price + hist_data.low_price) / 2
+                    THEN (hist_data.high_price + hist_data.low_price) / 2
                     ELSE 0
             END) AS med_price_90d
             , AVG(CASE
                 WHEN hist_data.dt BETWEEN {REPORT_DT} - interval 1 year AND {REPORT_DT}
-                    THEN (hist_data.hign_price + hist_data.low_price) / 2
+                    THEN (hist_data.high_price + hist_data.low_price) / 2
                     ELSE 0
             END) AS med_price_1y
             , MAX(CASE
@@ -169,13 +166,13 @@ DM_QUERY = f"""
 dm_table_loader = PySparkTableLoader(
     table_name='iceberg.cryptocurrencies_project_dm.analytic_indicators',
     stg_table_name='iceberg.cryptocurrencies_project_dm_stg.analytic_indicators',
-    partition_by=['asset'],
+    partition_by=['asset', 'report_dt'],
     spark_session=spark,
 )
 
 dm_table_loader \
     .calc_stg(DM_QUERY)\
-    .load_trg_scd1(overwrite_trg=False)
+    .load_trg_scd1(overwrite_trg=REWRITE_TRG)
 
 
 spark.stop()
