@@ -18,4 +18,4 @@ DM_ANALYTIC_INDICATORS_DATASET = Dataset(
     extra={"table_name": "iceberg.cryptocurrencies_project_dm.analytic_indicators", "layer": "dm"},
 )
 
-ALL_ENTITIES = [RAW_BTC_DATASET, ]
+ALL_ENTITIES = [RAW_BTC_DATASET, RAW_ETH_DATASET, DDS_TRADE_DATA_DATASET, DM_ANALYTIC_INDICATORS_DATASET]

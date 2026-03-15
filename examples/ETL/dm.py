@@ -4,6 +4,12 @@ from airflow import DAG
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
+from ETL.src.dwh_entities import DM_ANALYTIC_INDICATORS_DATASET, DDS_TRADE_DATA_DATASET
+
+
+SRC_ENTITIES = [DDS_TRADE_DATA_DATASET]
+TRG_ENTITIES = [DM_ANALYTIC_INDICATORS_DATASET]
+
 
 default_args = {
     'owner': 'MegaSuper_DE',
@@ -21,7 +27,7 @@ parameters = dict(
 dag = DAG(
     dag_id="cryptocurrencies_project_dm_loading",
     default_args=default_args,
-    schedule=None,
+    schedule=SRC_ENTITIES,
     description="Cryptocurrencies data analytics",
     catchup=False,
     tags=['DE', 'cryptocurrencies_project', 'dm', 'spark', 'iceberg'],
@@ -49,6 +55,7 @@ load_task = SparkSubmitOperator(
         'REPORT_DT': dag.params.get("report_dt"),
     },
     jars="/opt/spark/jars/hadoop-aws-3.3.4.jar,/opt/spark/jars/aws-java-sdk-bundle-1.12.791.jar,/opt/spark/jars/iceberg-spark-runtime-3.5_2.12-1.10.1.jar",
+    outlets=TRG_ENTITIES,
 )
 
 start_task >> load_task >> end_task

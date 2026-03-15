@@ -6,11 +6,13 @@ from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.providers.standard.operators.python import PythonOperator
 
 from ETL.src.data_collector import CryptoDataCollector
+from ETL.src.dwh_entities import RAW_BTC_DATASET, RAW_ETH_DATASET
 
 
 ASSETS_LIST = ['BTC', 'ETH']
 STG_SCHEMA = 'iceberg.cryptocurrencies_project_raw'
 TRG_SCHEMA = 'iceberg.cryptocurrencies_project_raw_stg'
+TRG_ENTITIES = [RAW_BTC_DATASET, RAW_ETH_DATASET]
 
 
 def load_cryptoasset_data(asset):
@@ -51,7 +53,9 @@ load_task = PythonOperator.partial(
 	max_active_tis_per_dag=1,
     )\
     .expand(
-        op_kwargs=[{'asset': i} for i in ASSETS_LIST]
+        op_kwargs=[{'asset': i} for i in ASSETS_LIST],
     )
 
-start_task >> load_task >> end_task
+entities_update_task = EmptyOperator(task_id='entities_update', dag=dag, outlets=TRG_ENTITIES)
+
+start_task >> load_task >> entities_update_task >> end_task
