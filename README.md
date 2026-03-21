@@ -31,6 +31,12 @@ Infrastructure for running DE pipelines locally
 4. Записываем данные в Iceberg-таблицу через Spark (pyspark-cluster)
 5. Запускаем тоже самое через AirFlow (dag - airflow/dags/spark-dag.py; job - airflow/dags/spark-jobs/spark-job-test.py)
 
+"Боевой" (почти) пример в папке examples/ETL:
+1. Загружаем данные из внешнего API с DuckDB
+2. Соединяем в детальную таблицу Spark-ом
+3. Считаем аналитические метрики над данными
+4. Обслуживаем Iceberg-таблицы в хранилище
+
 ## Заметки
 1. Java 21 (openjdk-21-jdk) не устанавливается (у меня)? Не удается найти пакет. Только 17.
 2. Используем Nessie catalog для Iceberg. Hive Metastore (>4) не работают с Iceberg? Open issue: https://github.com/apache/iceberg/issues/12878 
