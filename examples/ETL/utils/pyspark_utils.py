@@ -31,7 +31,8 @@ class PySparkDatabase:
                     'format-version' = '2',
                     'write.write-format' = 'parquet',
                     'write.parquet.compression-codec' = 'snappy',
-                    'write.compression-codec' = 'snappy'
+                    'write.compression-codec' = 'snappy',
+                    'gc.enabled' = true
                 )
                 {partitioning}
                 LOCATION '{table_location(db_name)}';

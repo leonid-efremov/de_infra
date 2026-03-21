@@ -53,6 +53,7 @@ maintenance_task = SparkSubmitOperator.partial(
     spark_binary="/home/airflow/.local/bin/spark-submit",
     properties_file='/opt/spark/conf/spark-defaults.conf',
     jars="/opt/spark/jars/hadoop-aws-3.3.4.jar,/opt/spark/jars/aws-java-sdk-bundle-1.12.791.jar,/opt/spark/jars/iceberg-spark-runtime-3.5_2.12-1.10.1.jar",
+	max_active_tis_per_dag=1,
 ).expand(
     env_vars=[make_env_4table(i) for i in TABLE_NAMES_LIST],
 )

@@ -22,7 +22,6 @@ spark.conf.set('spark.sql.shuffle.partitions', '10')
 spark.sql(f"""
     CALL iceberg.system.expire_snapshots(
         table => '{TABLE_NAME}',
-        older_than => TIMESTAMP current_timestamp - interval '1 day',
         retain_last => {SNAPSHOTS_NUM_TO_STORE}
     )
 """)
