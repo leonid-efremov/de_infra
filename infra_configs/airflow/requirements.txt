@@ -1,5 +1,6 @@
 pyspark==3.5.7
 apache-airflow-providers-apache-spark==5.5.0
+airflow-clickhouse-plugin==1.6.0
 pandas==2.3.3
 requests
 psycopg2-binary

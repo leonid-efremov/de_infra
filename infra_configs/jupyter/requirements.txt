@@ -6,3 +6,4 @@ pyiceberg[s3fs,hive,pyarrow]==0.11.0
 hive-metastore-client==1.0.9
 duckdb==1.4.4
 python-dotenv
+clickhouse-driver==0.2.10

@@ -8,6 +8,7 @@ Infrastructure for running DE pipelines locally
 4. Spark (localy or cluster mode) - ETL, data processing
 5. Iceberg + Nessie catalog - table metadata
 ~~5.5. Hive Metastore (unused)~~
+6. Clickhouse - OLAP database
 
 ## Инструкция
 Первый запуск на Windows:

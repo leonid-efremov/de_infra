@@ -83,7 +83,7 @@ x-ozone-common:
       OZONE-SITE.XML_ozone.scm.names: "ozone-scm"
       OZONE-SITE.XML_ozone.hdds.scm.safemode.min.datanode: "1"
       no_proxy: "ozone-om,ozone-recon,ozone-scm,ozone-s3g,localhost,127.0.0.1"
-   profiles: [core, ozone, spark, hive]
+   profiles: [core, ozone, spark, hive, clickhouse]
 
 # 4. Hive-Metastore (не используется)
 # Пример из документации: https://hive.apache.org/docs/latest/admin/setting-up-hive-with-docker/
@@ -150,7 +150,35 @@ x-nessie-common:
     interval: 30s
     timeout: 10s
     retries: 5
-  profiles: [core, spark, hive]
+  profiles: [core, spark, hive, clickhouse]
+
+# 6. Clickhouse - MPP СУБД (https://clickhouse.com/docs/install/docker)
+x-clickhouse-common:
+  &clickhouse-common
+  image: clickhouse/clickhouse-server:25.8
+  ports:
+      - "8123:8123"
+      - "9002:9000"
+  volumes:
+      - ${CLICKHOUSE_DATA_DIR}:/var/lib/clickhouse
+      - ${CLICKHOUSE_LOGS_DIR}:/var/log/clickhouse-server/
+  environment:
+    - CLICKHOUSE_USER=${CLICKHOUSE_USER}
+    - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+    - CLICKHOUSE_DB=${CLICKHOUSE_DB}
+  healthcheck:
+    test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+    interval: 60s
+    timeout: 10s
+    retries: 5
+    start_period: 30s
+  depends_on:
+    ozone-scm:
+      condition: service_healthy
+    nessie-catalog:
+      condition: service_healthy
+  profiles: [core, clickhouse]
+#- ${CLICKHOUSE_CONF_DIR}/config.xml:/etc/clickhouse-server/config.xml - ${CLICKHOUSE_CONF_DIR}/users.xml:/etc/clickhouse-server/users.xml
 
 services:
   postgres:
@@ -169,7 +197,7 @@ services:
       retries: 5
       start_period: 5s
     restart: always
-    profiles: [core, airflow, hive, spark]
+    profiles: [core, airflow, hive, spark, clickhouse]
 
   redis:
     image: redis:7.2-bookworm
@@ -475,7 +503,7 @@ services:
         limits:
           cpus: '2.00'
           memory: 2048M
-    profiles: [core, spark, jupyter, sparkcluster, hive, hms]
+    profiles: [core, spark, jupyter, sparkcluster, hive, hms, clickhouse]
 
   #hive-metastore:
   #  <<: *hive-metastore-common
@@ -519,3 +547,6 @@ services:
       spark-master:
         condition: service_healthy
     command: /opt/spark/sbin/start-worker.sh ${SPARK_MASTER_URL}
+
+  clickhouse:
+    <<: *clickhouse-common
