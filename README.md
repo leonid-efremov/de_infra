@@ -41,3 +41,4 @@ Infrastructure for running DE pipelines locally
 ## Заметки
 1. Java 21 (openjdk-21-jdk) не устанавливается (у меня)? Не удается найти пакет. Только 17.
 2. Используем Nessie catalog для Iceberg. Hive Metastore (>4) не работают с Iceberg? Open issue: https://github.com/apache/iceberg/issues/12878 
+3. По интеграции Clickhouse с Iceberg проблема (https://github.com/ClickHouse/ClickHouse/issues/96179)
